@@ -1,3 +1,5 @@
 *.o
 server.c
 client.c
+test.c
+test

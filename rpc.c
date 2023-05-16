@@ -1,10 +1,19 @@
 #include "rpc.h"
 #include "rpc-helper-functions.h"
+#include "linked-list.h"
+#include <string.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <math.h>
 
 struct rpc_server {
-    /* Add variable(s) for server state */
     int socket_fd;
+	Linked_List *functions;
+	int number_of_functions;
 };
 
 rpc_server *rpc_init_server(int port) {
@@ -17,9 +26,13 @@ rpc_server *rpc_init_server(int port) {
 		exit(EXIT_FAILURE);
 	}
 
+	// initialises the server struct
+	struct rpc_server *server = malloc(sizeof(struct rpc_server));
+	server->functions = create_list();
+	server->number_of_functions = 0;
+
 	// Accept a connection - blocks until a connection is ready to be accepted
 	// Get back a new file descriptor to communicate on
-	struct rpc_server *server = malloc(sizeof(struct rpc_server));
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_size = sizeof client_addr;
 	server->socket_fd =
@@ -42,8 +55,32 @@ rpc_server *rpc_init_server(int port) {
 	return server;
 }
 
+// struct used to encapsulate a function held by the server
+typedef struct {
+	char *name;
+	int id;
+} function;
+
 int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
-    return -1;
+	if (srv == NULL || name == NULL || handler == NULL) return -1;
+
+	// if there is a function with given name, removes it from list
+	Node *node = srv->functions->head, *previous = NULL;
+	while (node != NULL) {
+		if (strcmp(((function*)(node->data))->name, name) == 0) {
+			free(node->data);
+			remove_node(srv->functions, node, previous);
+		}
+		previous = node;
+		node = node->next;
+	}
+
+	function *new_function = malloc(sizeof(function));
+	new_function->id = srv->number_of_functions++;
+	new_function->name = strdup(name);
+
+	insert_at_foot(srv->functions, new_function);
+    return new_function->id;
 }
 
 void rpc_serve_all(rpc_server *srv) {
