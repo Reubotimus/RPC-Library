@@ -109,7 +109,7 @@ void handle_find(rpc_server *server, char *message) {
 	sscanf(message, "FIND %s", function_name);
 	sprintf(return_string, "FUNCTION %d", search_function_list(server->functions, function_name));
 	send(server->socket_fd, return_string, strlen(return_string), 0);
-	printf("FIND request response: %s\n", return_string);
+	//printf("FIND request response: %s\n", return_string);
 }
 
 // handle the CALL request from client
@@ -118,7 +118,7 @@ void handle_call(rpc_server *server, char *message) {
 	int64_t function_id = ((int64_t*)(message + 5))[0];
 	rpc_data *input_data = deserialise_data(message + 5 + 8);
 	char return_string[1000];
-	printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
+	//printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
 
 	// finds appropriate function
 	function *funct = NULL;
@@ -179,14 +179,4 @@ rpc_data *deserialise_data(void *serialised_data) {
 	return_data->data2 = malloc(return_data->data2_len);
 	memcpy(return_data->data2, serialised_data + 16, return_data->data2_len);
 	return return_data;
-}
-
-void print_bits(void *bytes, size_t size) {
-	for (int i = 0; i < size; i++) {
-		for (int j = 0; j < 8; j++) {
-			printf("%d", (((int8_t*)bytes)[i] >> j) & 1);
-		}
-		printf(" | ");
-	}
-	printf("\n");
 }

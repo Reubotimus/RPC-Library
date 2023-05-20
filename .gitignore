@@ -1,8 +1,8 @@
 *.o
-server.c
-client.c
 test.c
 test
-client
-server
+client.c
+server.c
+rpc-client
+rpc-server
 rpc.a

@@ -46,7 +46,7 @@ rpc_server *rpc_init_server(int port) {
 	inet_ntop(client_addr.sin_family, &client_addr.sin_addr, ip,
 			  INET_ADDRSTRLEN);
 	port = ntohs(client_addr.sin_port);
-	printf("new connection from %s:%d on socket %d\n", ip, port, server->socket_fd);
+	//printf("new connection from %s:%d on socket %d\n", ip, port, server->socket_fd);
     
 	// close unused socket and returns server
 	close(socket_fd);
@@ -82,11 +82,11 @@ void rpc_serve_all(rpc_server *srv) {
 	int len;
 	char buf[100];
 	while (1) {
-		printf("\n");
+		//printf("\n");
 		len = recv(srv->socket_fd, buf, 100, 0);
 		if (len == 0) {
 			perror("connection closed");
-			exit(EXIT_FAILURE);
+			exit(EXIT_SUCCESS);
 		}
 		buf[len] = '\0';
 
@@ -159,7 +159,10 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 
 	// converts response into a function handle
 	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
-	sscanf(buf, "FUNCTION %d", &(new_handle->id));
+	if (sscanf(buf, "FUNCTION %d", &(new_handle->id)) != 1) {
+		printf("given wrong message type\n");
+		exit(EXIT_FAILURE);
+	}
 
     return new_handle;
 }
@@ -173,13 +176,13 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	send(cl->socket_fd, message,  5 + 8 + 8 + 8 + payload->data2_len, 0);
 	int len = recv(cl->socket_fd, message, 1000, 0);
 	message[len] = '\0';
-	print_bits(message, len);
 	
     return deserialise_data(message + 5);
 }
 
 void rpc_close_client(rpc_client *cl) {
-
+	close(cl->socket_fd);
+	free(cl);
 }
 
 void rpc_data_free(rpc_data *data) {

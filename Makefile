@@ -9,16 +9,14 @@ OBJS=$(SRCS:.c=.o)
 rpc.a: $(OBJS)
 	ar -rcs rpc.a $(OBJS)
 
-all: clean test client server
+all: clean rpc-client rpc-server
 
-test: test.o rpc.a
-	$(CC) $(CFLAGS) test.o $(LDFLAGS) -o $@
 
-client: client.o rpc.a
+rpc-client: client.o rpc.a
 	$(CC) $(CFLAGS) client.o $(LDFLAGS) -o $@
 
-server: server.o rpc.a
+rpc-server: server.o rpc.a
 	$(CC) $(CFLAGS) server.o $(LDFLAGS) -o $@
 
 clean:
-	rm -f test server client *.a *.o
+	rm -f test rpc-server rpc-client *.a *.o
