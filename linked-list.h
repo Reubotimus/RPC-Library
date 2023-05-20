@@ -1,7 +1,13 @@
 #ifndef _LINKED_LIST
 
 #define _LINKED_LIST 
-
+/*
+Both this file and linked-list.c was created by myself, Reuben Cook,
+in the previous assignment for this subject.
+It was designed to be a very modular linked list and as such no changes 
+had to be made. 
+The only addition to these files is the `remove_node` function.
+*/
 typedef struct node_struct {
     void *data;
     struct node_struct *next;

@@ -3,3 +3,6 @@ server.c
 client.c
 test.c
 test
+client
+server
+rpc.a

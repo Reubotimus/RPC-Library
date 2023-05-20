@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+Both this file and linked-list.h was created by myself, Reuben Cook,
+in the previous assignment for this subject.
+It was designed to be a very modular linked list and as such no changes 
+had to be made. 
+The only addition to these files is the `remove_node` function.
+*/
+
 // makes an empty list
 Linked_List *create_list() {
     Linked_List *linked_list = malloc(sizeof(Linked_List));

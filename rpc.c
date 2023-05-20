@@ -9,25 +9,23 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <math.h>
+#include <assert.h>
+#define LISTEN_QUEUE_LENGTH 5
 
-struct rpc_server {
-    int socket_fd;
-	Linked_List *functions;
-	int number_of_functions;
-};
+
 
 rpc_server *rpc_init_server(int port) {
     
 	int socket_fd = create_listening_socket(port);
 	// Listen on socket - means we're ready to accept connections,
 	// incoming connection requests will be queued, man 3 listen
-	if (listen(socket_fd, 5) < 0) {
+	if (listen(socket_fd, LISTEN_QUEUE_LENGTH) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
 
 	// initialises the server struct
-	struct rpc_server *server = malloc(sizeof(struct rpc_server));
+	rpc_server *server = malloc(sizeof(rpc_server));
 	server->functions = create_list();
 	server->number_of_functions = 0;
 
@@ -55,11 +53,7 @@ rpc_server *rpc_init_server(int port) {
 	return server;
 }
 
-// struct used to encapsulate a function held by the server
-typedef struct {
-	char *name;
-	int id;
-} function;
+
 
 int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
 	if (srv == NULL || name == NULL || handler == NULL) return -1;
@@ -78,23 +72,38 @@ int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
 	function *new_function = malloc(sizeof(function));
 	new_function->id = srv->number_of_functions++;
 	new_function->name = strdup(name);
+	new_function->handler = handler;
 
 	insert_at_foot(srv->functions, new_function);
     return new_function->id;
 }
 
 void rpc_serve_all(rpc_server *srv) {
+	int len;
+	char buf[100];
+	while (1) {
+		printf("\n");
+		len = recv(srv->socket_fd, buf, 100, 0);
+		if (len == 0) {
+			perror("connection closed");
+			exit(EXIT_FAILURE);
+		}
+		buf[len] = '\0';
 
+		switch(get_request_type(buf)) {
+			case FIND_REQUEST:
+				handle_find(srv, buf);
+				break;
+			case CALL_REQUEST:
+				handle_call(srv, buf);
+				break;
+			case INVALID_REQUEST:
+				printf("invalid request\n");
+				break;
+		}
+
+	}
 }
-
-struct rpc_client {
-    /* Add variable(s) for client state */
-    int socket_fd;
-};
-
-struct rpc_handle {
-    /* Add variable(s) for handle */
-};
 
 rpc_client *rpc_init_client(char *addr, int port) {
     int s;
@@ -139,11 +148,34 @@ rpc_client *rpc_init_client(char *addr, int port) {
 }
 
 rpc_handle *rpc_find(rpc_client *cl, char *name) {
-    return NULL;
+	// send request to server
+	char buf[100];
+	sprintf(buf, "FIND %s", name);
+	send(cl->socket_fd, buf, strlen(buf), 0);
+
+	// receive response from server
+	int len = recv(cl->socket_fd, buf, 100, 0);
+    buf[len] = '\0';
+
+	// converts response into a function handle
+	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
+	sscanf(buf, "FUNCTION %d", &(new_handle->id));
+
+    return new_handle;
 }
 
 rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
-    return NULL;
+	char message[1000];
+	sprintf(message, "CALL ");
+	((int64_t*)(message + 5))[0] = (int64_t)h->id;
+	serialise_data(message + 5 + 8, 1000 - 5 - 8, payload);
+
+	send(cl->socket_fd, message,  5 + 8 + 8 + 8 + payload->data2_len, 0);
+	int len = recv(cl->socket_fd, message, 1000, 0);
+	message[len] = '\0';
+	print_bits(message, len);
+	
+    return deserialise_data(message + 5);
 }
 
 void rpc_close_client(rpc_client *cl) {
