@@ -15,41 +15,20 @@
 
 
 rpc_server *rpc_init_server(int port) {
-    
-	int socket_fd = create_listening_socket(port);
-	// Listen on socket - means we're ready to accept connections,
-	// incoming connection requests will be queued, man 3 listen
-	if (listen(socket_fd, LISTEN_QUEUE_LENGTH) < 0) {
-		perror("listen");
-		exit(EXIT_FAILURE);
-	}
-
 	// initialises the server struct
 	rpc_server *server = malloc(sizeof(rpc_server));
 	server->functions = create_list();
 	server->number_of_functions = 0;
+    
+	server->listening_socket = create_listening_socket(port);
 
-	// Accept a connection - blocks until a connection is ready to be accepted
-	// Get back a new file descriptor to communicate on
-	struct sockaddr_in client_addr;
-	socklen_t client_addr_size = sizeof client_addr;
-	server->socket_fd =
-		accept(socket_fd, (struct sockaddr*)&client_addr, &client_addr_size);
-	if (server->socket_fd < 0) {
-		perror("accept");
+	// Listen on socket - means we're ready to accept connections,
+	// incoming connection requests will be queued, man 3 listen
+	if (listen(server->listening_socket, LISTEN_QUEUE_LENGTH) < 0) {
+		perror("listen");
 		exit(EXIT_FAILURE);
 	}
 
-	char ip[INET_ADDRSTRLEN];
-	// Print ipv4 peer information (can be removed)
-	getpeername(server->socket_fd, (struct sockaddr*)&client_addr, &client_addr_size);
-	inet_ntop(client_addr.sin_family, &client_addr.sin_addr, ip,
-			  INET_ADDRSTRLEN);
-	port = ntohs(client_addr.sin_port);
-	//printf("new connection from %s:%d on socket %d\n", ip, port, server->socket_fd);
-    
-	// close unused socket and returns server
-	close(socket_fd);
 	return server;
 }
 
@@ -81,27 +60,40 @@ int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
 void rpc_serve_all(rpc_server *srv) {
 	int len;
 	char buf[100];
+	struct sockaddr_in client_addr;
+	socklen_t client_addr_size = sizeof client_addr;
 	while (1) {
-		//printf("\n");
-		len = recv(srv->socket_fd, buf, 100, 0);
-		if (len == 0) {
-			perror("connection closed");
-			exit(EXIT_SUCCESS);
+		// Accept a connection - blocks until a connection is ready to be accepted
+		// Get back a new file descriptor to communicate on
+		srv->socket_fd =
+			accept(srv->listening_socket, (struct sockaddr*)&client_addr, &client_addr_size);
+		if (srv->socket_fd < 0) {
+			perror("accept");
+			exit(EXIT_FAILURE);
 		}
-		buf[len] = '\0';
+		// while connected handle all requests
+		while (1) {
+			len = recv(srv->socket_fd, buf, 100, 0);
+			buf[len] = '\0';
 
-		switch(get_request_type(buf)) {
-			case FIND_REQUEST:
-				handle_find(srv, buf);
+			// connection terminated
+			if (len == 0) {
+				close(srv->socket_fd);
 				break;
-			case CALL_REQUEST:
-				handle_call(srv, buf);
-				break;
-			case INVALID_REQUEST:
-				printf("invalid request\n");
-				break;
+			}
+
+			switch(get_request_type(buf)) {
+				case FIND_REQUEST:
+					handle_find(srv, buf);
+					break;
+				case CALL_REQUEST:
+					handle_call(srv, buf);
+					break;
+				case INVALID_REQUEST:
+					printf("invalid request\n");
+					break;
+			}
 		}
-
 	}
 }
 

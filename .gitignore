@@ -6,3 +6,4 @@ server.c
 rpc-client
 rpc-server
 rpc.a
+test.sh

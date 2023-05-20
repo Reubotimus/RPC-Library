@@ -10,6 +10,7 @@
 /* Server state */
 typedef struct {
     int socket_fd;
+    int listening_socket;
 	Linked_List *functions;
 	int number_of_functions;
 } rpc_server;
