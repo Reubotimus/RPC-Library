@@ -103,7 +103,7 @@ rpc_client *rpc_init_client(char *addr, int port) {
 
 	// Create address
 	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_INET;
+	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_STREAM;
 
 	// convert port into string for getaddrinfo function

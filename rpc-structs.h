@@ -20,6 +20,4 @@ struct rpc_client {
     int socket_fd;
 };
 
-
-
 #endif
