@@ -108,7 +108,7 @@ void handle_find(rpc_server *server, char *message) {
 	char return_string[MAX_MSG_LEN];
 	
 	sprintf(return_string, "%s ", FUNCTION_MSG_STR);
-	*((int32_t*)(return_string + FIND_CMD_STR_LEN + 1)) = htonl(
+	*((int32_t*)(return_string + FUNCTION_MSG_STR_LEN + 1)) = htonl(
 			search_function_list(server->functions, message + FIND_CMD_STR_LEN + 1)
 		);
 	
