@@ -149,13 +149,18 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	int len = recv(cl->socket_fd, buf, 100, 0);
     buf[len] = '\0';
 
-	// converts response into a function handle
-	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
-	if (sscanf(buf, "FUNCTION %d", &(new_handle->id)) != 1) {
-		printf("given wrong message type\n");
+	int function_id;
+	if (sscanf(buf, "FUNCTION %d", &function_id) != 1) {
+		perror("given wrong message type\n");
 		exit(EXIT_FAILURE);
 	}
 
+	// returns null if server does not have function
+	if (function_id < 0) return NULL;
+
+	// creates and returns the handle
+	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
+	new_handle->id = function_id;
     return new_handle;
 }
 
