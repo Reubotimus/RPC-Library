@@ -42,7 +42,7 @@ int create_listening_socket(int port) {
 	hints.ai_flags = AI_PASSIVE;     // for bind, listen, accept
 
 	// convert port into string for getaddrinfo function
-	char service[6];
+	char service[MAX_PORT_STR_LEN];
 	sprintf(service, "%d", port);
 	
 	// node (NULL means any interface), service (port), hints, res
@@ -78,7 +78,7 @@ int create_listening_socket(int port) {
 // returns the request type from a message recieved from the client
 enum REQUEST_TYPE get_request_type(char *message) {
 	// copy request header
-	char buf[100];
+	char buf[MAX_MSG_LEN];
 	int i;
 	for (i = 0; message[i] != '\0' && message[i] != ' '; i++) {
 		buf[i] = message[i];
@@ -86,8 +86,8 @@ enum REQUEST_TYPE get_request_type(char *message) {
 	buf[i] = '\0';
 
 	// returns appropriate request type
-	if (!strcmp(buf, "FIND")) return FIND_REQUEST;
-	if (!strcmp(buf, "CALL")) return CALL_REQUEST;
+	if (!strcmp(buf, FIND_CMD_STR)) return FIND_REQUEST;
+	if (!strcmp(buf, CALL_CMD_STR)) return CALL_REQUEST;
 	return INVALID_REQUEST;
 }
 
@@ -105,19 +105,22 @@ int search_function_list(Linked_List *list, char *name) {
 
 // handle the FIND request from client
 void handle_find(rpc_server *server, char *message) {
-	char function_name[100], return_string[100];
-	sscanf(message, "FIND %s", function_name);
-	sprintf(return_string, "FUNCTION %d", search_function_list(server->functions, function_name));
-	send(server->socket_fd, return_string, strlen(return_string), 0);
-	//printf("FIND request response: %s\n", return_string);
+	char return_string[MAX_MSG_LEN];
+	
+	sprintf(return_string, "%s ", FUNCTION_MSG_STR);
+	*((int32_t*)(return_string + FIND_CMD_STR_LEN + 1)) = htonl(
+			search_function_list(server->functions, message + FIND_CMD_STR_LEN + 1)
+		);
+	
+	send(server->socket_fd, return_string, FUNCTION_MSG_STR_LEN + 1 + sizeof(int32_t), 0);
 }
 
 // handle the CALL request from client
 void handle_call(rpc_server *server, char *message) {
 	// gets inputs from message
-	int64_t function_id = ((int64_t*)(message + 5))[0];
-	rpc_data *input_data = deserialise_data(message + 5 + 8);
-	char return_string[1000];
+	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
+	rpc_data *input_data = deserialise_data(message + CALL_CMD_STR_LEN + 1 + sizeof(int64_t));
+	char return_string[MAX_MSG_LEN];
 	//printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
 
 	// finds appropriate function
@@ -133,22 +136,26 @@ void handle_call(rpc_server *server, char *message) {
 
 	// if function null sends return error
 	if (funct == NULL) {
-		sprintf(return_string, "DATA NULL");
+		sprintf(return_string, "%s", DATA_MSG_STR);
 		send(server->socket_fd, return_string, strlen(return_string), 0);
+		return;
 	}
 
 	// gets return data and sends it to client
 	rpc_data *return_data = (funct->handler)(input_data);
 	assert(return_data != NULL);
-	sprintf(return_string, "DATA ");
-	serialise_data(return_string + 5, 1000 - 5, return_data);
+	sprintf(return_string, "%s ", DATA_MSG_STR);
+	serialise_data(
+		return_string + DATA_MSG_STR_LEN + 1, 
+		MAX_MSG_LEN - DATA_MSG_STR_LEN - 1, 
+		return_data);
 
-	send(server->socket_fd, return_string, 5 + 2*8 + return_data->data2_len, 0);
+	send(server->socket_fd, return_string, DATA_MSG_STR_LEN + (2 * sizeof(int64_t)) + return_data->data2_len, 0);
 }
 
 // serialises the data into the byte stream `serialised_data`
 void serialise_data(void *serialised_data, int serialised_data_length, rpc_data* data) {
-	assert(serialised_data_length >= 8 + 8 + data->data2_len);
+	assert(serialised_data_length >= 2 * sizeof(int64_t) + data->data2_len);
 
 	int64_t d1 = data->data1;
 	int64_t d2_len = data->data2_len;
@@ -177,6 +184,10 @@ rpc_data *deserialise_data(void *serialised_data) {
 	}
 	// otherwise
 	return_data->data2 = malloc(return_data->data2_len);
+	if (return_data->data2 == NULL) {
+		perror("Overlength error\n");
+		exit(EXIT_FAILURE);
+	}
 	memcpy(return_data->data2, serialised_data + 16, return_data->data2_len);
 	return return_data;
 }

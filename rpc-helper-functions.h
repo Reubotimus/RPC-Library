@@ -1,5 +1,22 @@
 #include "rpc.h"
 
+#define MAX_PORT_STR_LEN 6
+
+#define MAX_MSG_LEN 100022
+#define MAX_FUNCTION_NAME_LEN 1000
+
+#define FIND_CMD_STR "FIND"
+#define FIND_CMD_STR_LEN 4
+
+#define CALL_CMD_STR "CALL"
+#define CALL_CMD_STR_LEN 4
+
+#define DATA_MSG_STR "DATA"
+#define DATA_MSG_STR_LEN 4
+
+#define FUNCTION_MSG_STR "FUNCTION"
+#define FUNCTION_MSG_STR_LEN 8
+
 // creates a listening socket and returns the file descriptor
 int create_listening_socket(int port);
 

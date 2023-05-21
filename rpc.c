@@ -10,7 +10,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#define LISTEN_QUEUE_LENGTH 5
+#define LISTEN_QUEUE_LEN 5
 
 
 
@@ -24,7 +24,7 @@ rpc_server *rpc_init_server(int port) {
 
 	// Listen on socket - means we're ready to accept connections,
 	// incoming connection requests will be queued, man 3 listen
-	if (listen(server->listening_socket, LISTEN_QUEUE_LENGTH) < 0) {
+	if (listen(server->listening_socket, LISTEN_QUEUE_LEN) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
@@ -57,9 +57,10 @@ int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
     return new_function->id;
 }
 
+
 void rpc_serve_all(rpc_server *srv) {
 	int len;
-	char buf[100];
+	char buf[MAX_MSG_LEN];
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_size = sizeof client_addr;
 	while (1) {
@@ -73,7 +74,7 @@ void rpc_serve_all(rpc_server *srv) {
 		}
 		// while connected handle all requests
 		while (1) {
-			len = recv(srv->socket_fd, buf, 100, 0);
+			len = recv(srv->socket_fd, buf, MAX_MSG_LEN, 0);
 			buf[len] = '\0';
 
 			// connection terminated
@@ -107,7 +108,7 @@ rpc_client *rpc_init_client(char *addr, int port) {
 	hints.ai_socktype = SOCK_STREAM;
 
 	// convert port into string for getaddrinfo function
-	char service[6];
+	char service[MAX_PORT_STR_LEN];
 	sprintf(service, "%d", port);
 
 	// Get addrinfo of server
@@ -141,19 +142,16 @@ rpc_client *rpc_init_client(char *addr, int port) {
 
 rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	// send request to server
-	char buf[100];
-	sprintf(buf, "FIND %s", name);
+	char buf[MAX_MSG_LEN];
+	sprintf(buf, "%s %s", FIND_CMD_STR, name);
 	send(cl->socket_fd, buf, strlen(buf), 0);
 
 	// receive response from server
-	int len = recv(cl->socket_fd, buf, 100, 0);
+	int len = recv(cl->socket_fd, buf, MAX_MSG_LEN, 0);
     buf[len] = '\0';
 
-	int function_id;
-	if (sscanf(buf, "FUNCTION %d", &function_id) != 1) {
-		perror("given wrong message type\n");
-		exit(EXIT_FAILURE);
-	}
+	// get function id from message
+	int32_t function_id = ntohl(*((int32_t*)(buf + FUNCTION_MSG_STR_LEN + 1)));
 
 	// returns null if server does not have function
 	if (function_id < 0) return NULL;
@@ -165,15 +163,26 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 }
 
 rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
-	char message[1000];
-	sprintf(message, "CALL ");
-	((int64_t*)(message + 5))[0] = (int64_t)h->id;
-	serialise_data(message + 5 + 8, 1000 - 5 - 8, payload);
+	char message[MAX_MSG_LEN];
+	sprintf(message, "%s ", CALL_CMD_STR);
+	((int64_t*)(message + (CALL_CMD_STR_LEN + 1)))[0] = (int64_t)h->id;
 
-	send(cl->socket_fd, message,  5 + 8 + 8 + 8 + payload->data2_len, 0);
-	int len = recv(cl->socket_fd, message, 1000, 0);
-	message[len] = '\0';
+	// serialise and send data
+	serialise_data(
+		message + (CALL_CMD_STR_LEN + 1) + sizeof(int64_t), 
+		MAX_MSG_LEN - CALL_CMD_STR_LEN - sizeof(int64_t), 
+		payload);
+
+	send(
+		cl->socket_fd, 
+		message,  
+		(CALL_CMD_STR_LEN + 1) + 3 * sizeof(int64_t) + payload->data2_len, 
+		0);
 	
+	// get and return response
+	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
+	message[len] = '\0';
+	if (len == DATA_MSG_STR_LEN) return NULL;
     return deserialise_data(message + 5);
 }
 
