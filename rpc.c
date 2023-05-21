@@ -88,7 +88,7 @@ void rpc_serve_all(rpc_server *srv) {
 					handle_find(srv, buf);
 					break;
 				case CALL_REQUEST:
-					handle_call(srv, buf);
+					handle_call(srv, buf, len);
 					break;
 				case INVALID_REQUEST:
 					printf("invalid request\n");
@@ -183,7 +183,7 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
 	message[len] = '\0';
 	if (len == DATA_MSG_STR_LEN) return NULL;
-    return deserialise_data(message + DATA_MSG_STR_LEN + 1);
+    return deserialise_data(message + DATA_MSG_STR_LEN + 1, len - (DATA_MSG_STR_LEN + 1));
 }
 
 void rpc_close_client(rpc_client *cl) {

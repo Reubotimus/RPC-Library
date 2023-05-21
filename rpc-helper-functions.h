@@ -30,13 +30,13 @@ enum REQUEST_TYPE get_request_type(char *message);
 void handle_find(rpc_server *server, char *message);
 
 // handle the CALL request from client
-void handle_call(rpc_server *server, char *message);
+void handle_call(rpc_server *server, char *message, int message_len);
 
 // serialises the data into the byte stream `send_data`
 void serialise_data(void *send_data, int send_data_length, rpc_data* data);
 
 // deserialises the data from byte stream returns a malloced data
-rpc_data *deserialise_data(void *serialised_data);
+rpc_data *deserialise_data(void *serialised_data, int array_len);
 
 void print_bits(void *bytes, size_t size);
 

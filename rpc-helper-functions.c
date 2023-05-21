@@ -116,10 +116,14 @@ void handle_find(rpc_server *server, char *message) {
 }
 
 // handle the CALL request from client
-void handle_call(rpc_server *server, char *message) {
+void handle_call(rpc_server *server, char *message, int message_len) {
 	// gets inputs from message
 	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
-	rpc_data *input_data = deserialise_data(message + CALL_CMD_STR_LEN + 1 + sizeof(int64_t));
+	rpc_data *input_data = 
+		deserialise_data(
+			message + CALL_CMD_STR_LEN + 1 + sizeof(int64_t),
+			message_len - (CALL_CMD_STR_LEN + 1 + sizeof(int64_t))
+		);
 	char return_string[MAX_MSG_LEN];
 
 	if (input_data == NULL) {
@@ -178,11 +182,17 @@ void serialise_data(void *serialised_data, int serialised_data_length, rpc_data*
 }
 
 // deserialises the data from byte stream returns a malloced data
-rpc_data *deserialise_data(void *serialised_data) {
+rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	rpc_data *return_data = malloc(sizeof(rpc_data));
 
 	return_data->data1 = reverse_byte_order(((int64_t*)serialised_data)[0]);
 	return_data->data2_len = reverse_byte_order(((int64_t*)serialised_data)[1]);
+
+	if (array_len != 2 * sizeof(int64_t) + return_data->data2_len) {
+		perror("inconsistent data2_len and data2\n");
+		free(return_data);
+		return NULL;
+	}
 	
 	if (return_data->data2_len <= 0) {
 		return_data->data2 = NULL;
