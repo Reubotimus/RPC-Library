@@ -1,7 +1,6 @@
 #include "rpc-helper-functions.h"
 #include "linked-list.h"
 #include "rpc.h"
-#include "rpc-structs.h"
 
 #define _POSIX_C_SOURCE 200112L
 #include <assert.h>
