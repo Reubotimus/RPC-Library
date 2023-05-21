@@ -150,7 +150,7 @@ void handle_call(rpc_server *server, char *message) {
 		MAX_MSG_LEN - DATA_MSG_STR_LEN - 1, 
 		return_data);
 
-	send(server->socket_fd, return_string, DATA_MSG_STR_LEN + (2 * sizeof(int64_t)) + return_data->data2_len, 0);
+	send(server->socket_fd, return_string, DATA_MSG_STR_LEN + 1 + (2 * sizeof(int64_t)) + return_data->data2_len, 0);
 }
 
 // serialises the data into the byte stream `serialised_data`

@@ -170,7 +170,7 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	// serialise and send data
 	serialise_data(
 		message + (CALL_CMD_STR_LEN + 1) + sizeof(int64_t), 
-		MAX_MSG_LEN - CALL_CMD_STR_LEN - sizeof(int64_t), 
+		MAX_MSG_LEN - (CALL_CMD_STR_LEN + 1) - sizeof(int64_t), 
 		payload);
 
 	send(
@@ -183,7 +183,7 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
 	message[len] = '\0';
 	if (len == DATA_MSG_STR_LEN) return NULL;
-    return deserialise_data(message + 5);
+    return deserialise_data(message + DATA_MSG_STR_LEN + 1);
 }
 
 void rpc_close_client(rpc_client *cl) {
