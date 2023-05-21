@@ -121,6 +121,12 @@ void handle_call(rpc_server *server, char *message) {
 	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
 	rpc_data *input_data = deserialise_data(message + CALL_CMD_STR_LEN + 1 + sizeof(int64_t));
 	char return_string[MAX_MSG_LEN];
+
+	if (input_data == NULL) {
+		sprintf(return_string, "%s", DATA_MSG_STR);
+		send(server->socket_fd, return_string, strlen(return_string), 0);
+		return;
+	}
 	//printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
 
 	// finds appropriate function
@@ -186,8 +192,9 @@ rpc_data *deserialise_data(void *serialised_data) {
 	return_data->data2 = malloc(return_data->data2_len);
 	if (return_data->data2 == NULL) {
 		perror("Overlength error\n");
-		exit(EXIT_FAILURE);
+		free(return_data);
+		return NULL;
 	}
-	memcpy(return_data->data2, serialised_data + 16, return_data->data2_len);
+	memcpy(return_data->data2, serialised_data + 2 * sizeof(int64_t), return_data->data2_len);
 	return return_data;
 }
