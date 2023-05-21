@@ -38,7 +38,8 @@ void serialise_data(void *send_data, int send_data_length, rpc_data* data);
 // deserialises the data from byte stream returns a malloced data
 rpc_data *deserialise_data(void *serialised_data, int array_len);
 
-void print_bits(void *bytes, size_t size);
+// handles all requests from client until client closes
+void serve_client(rpc_server *srv);
 
 // struct used to encapsulate a function held by the server
 typedef struct {

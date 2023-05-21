@@ -208,3 +208,33 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	memcpy(return_data->data2, serialised_data + 2 * sizeof(int64_t), return_data->data2_len);
 	return return_data;
 }
+
+// handles all requests from client until client closes
+void serve_client(rpc_server *srv) {
+	int len;
+	char buf[MAX_MSG_LEN];
+
+	// while connected handle all requests
+	while (1) {
+		len = recv(srv->socket_fd, buf, MAX_MSG_LEN, 0);
+		buf[len] = '\0';
+
+		// connection terminated
+		if (len == 0) {
+			break;
+		}
+
+		// handle request
+		switch(get_request_type(buf)) {
+			case FIND_REQUEST:
+				handle_find(srv, buf);
+				break;
+			case CALL_REQUEST:
+				handle_call(srv, buf, len);
+				break;
+			case INVALID_REQUEST:
+				printf("invalid request\n");
+				break;
+		}
+	}
+}

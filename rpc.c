@@ -10,7 +10,8 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#define LISTEN_QUEUE_LEN 5
+#define LISTEN_QUEUE_LEN 10
+#define NONBLOCKING
 
 
 
@@ -59,8 +60,7 @@ int rpc_register(rpc_server *srv, char *name, rpc_handler handler) {
 
 
 void rpc_serve_all(rpc_server *srv) {
-	int len;
-	char buf[MAX_MSG_LEN];
+
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_size = sizeof client_addr;
 	while (1) {
@@ -72,29 +72,12 @@ void rpc_serve_all(rpc_server *srv) {
 			perror("accept");
 			exit(EXIT_FAILURE);
 		}
-		// while connected handle all requests
-		while (1) {
-			len = recv(srv->socket_fd, buf, MAX_MSG_LEN, 0);
-			buf[len] = '\0';
-
-			// connection terminated
-			if (len == 0) {
-				close(srv->socket_fd);
-				break;
-			}
-
-			switch(get_request_type(buf)) {
-				case FIND_REQUEST:
-					handle_find(srv, buf);
-					break;
-				case CALL_REQUEST:
-					handle_call(srv, buf, len);
-					break;
-				case INVALID_REQUEST:
-					printf("invalid request\n");
-					break;
-			}
+		if (fork() != 0) {
+			serve_client(srv);
+			close(srv->socket_fd);
+			exit(EXIT_SUCCESS);
 		}
+		close(srv->socket_fd);
 	}
 }
 
@@ -185,7 +168,9 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
 	message[len] = '\0';
 	if (len == DATA_MSG_STR_LEN) return NULL;
-    return deserialise_data(message + DATA_MSG_STR_LEN + 1, len - (DATA_MSG_STR_LEN + 1));
+    return deserialise_data(
+		message + DATA_MSG_STR_LEN + 1, 
+		len    - (DATA_MSG_STR_LEN + 1));
 }
 
 void rpc_close_client(rpc_client *cl) {
