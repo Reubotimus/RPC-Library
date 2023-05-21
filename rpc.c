@@ -1,6 +1,7 @@
 #include "rpc.h"
 #include "rpc-helper-functions.h"
 #include "linked-list.h"
+#include "rpc-structs.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -11,8 +12,6 @@
 #include <math.h>
 #include <assert.h>
 #define LISTEN_QUEUE_LENGTH 5
-
-
 
 rpc_server *rpc_init_server(int port) {
 	// initialises the server struct
