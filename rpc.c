@@ -192,10 +192,17 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	// get and return response
 	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
 	message[len] = '\0';
-	if (len == DATA_MSG_STR_LEN) return NULL;
-    return deserialise_data(
+	if (len == DATA_MSG_STR_LEN) {
+		printf("error occured returning null\n");
+		return NULL;
+	}
+	rpc_data *d = deserialise_data(
 		message + DATA_MSG_STR_LEN + 1, 
 		len    - (DATA_MSG_STR_LEN + 1));
+	if (d == NULL) {
+		printf("error deserialising data\n");
+	}
+    return d;
 }
 
 void rpc_close_client(rpc_client *cl) {
