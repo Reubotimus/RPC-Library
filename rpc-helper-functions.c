@@ -189,11 +189,13 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	return_data->data2_len = reverse_byte_order(((int64_t*)serialised_data)[1]);
 
 	if (array_len != 2 * sizeof(int64_t) + return_data->data2_len) {
-		perror("inconsistent data2_len and data2\n");
+		printf("inconsistent data2_len and data2\n");
+		
 		free(return_data);
 		return NULL;
 	}
 	
+	// no need to deal with data2 if len is 0
 	if (return_data->data2_len <= 0) {
 		return_data->data2 = NULL;
 		return return_data;
@@ -201,7 +203,7 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	// otherwise
 	return_data->data2 = malloc(return_data->data2_len);
 	if (return_data->data2 == NULL) {
-		perror("Overlength error\n");
+		printf("Overlength error\n");
 		free(return_data);
 		return NULL;
 	}

@@ -167,6 +167,7 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	// creates and returns the handle
 	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
 	new_handle->id = function_id;
+	printf("found funct with id: %d\n", new_handle->id);
     return new_handle;
 }
 
