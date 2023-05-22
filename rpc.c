@@ -159,7 +159,7 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 
 	// returns null if server does not have function
 	if (function_id < 0) {
-		printf("function not found\n");
+		//printf("function not found\n");
 		return NULL;
 	}
 
