@@ -155,7 +155,9 @@ void handle_call(rpc_server *server, int socket_fd, char *message, int message_l
 
 	// gets return data and sends it to client
 	rpc_data *return_data = (funct->handler)(input_data);
-	if (return_data == NULL) {
+	if (return_data == NULL || 
+			((return_data->data2_len == 0 && return_data->data2 != NULL) || 
+			 (return_data->data2_len != 0 && return_data->data2 == NULL))) {
 		sprintf(return_string, "%s", DATA_MSG_STR);
 		send(socket_fd, return_string, DATA_MSG_STR_LEN, 0);
 		return;
