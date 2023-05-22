@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS= -Wall -g
-LDFLAGS = -L. -l:rpc.a -pthread
+LDFLAGS = -L. -l:rpc.a -pthread -l:rpc.a
 
 SRCS= linked-list.c rpc-helper-functions.c rpc.c
 
@@ -12,11 +12,11 @@ rpc.a: $(OBJS)
 all: clean rpc-client rpc-server
 
 
-rpc-client: client.o rpc.a
-	$(CC) $(CFLAGS) client.o $(LDFLAGS) -o $@
+rpc-client: rpc.a
+	$(CC) $(CFLAGS) client.a $(LDFLAGS) -o $@
 
-rpc-server: server.o rpc.a
-	$(CC) $(CFLAGS) server.o $(LDFLAGS) -o $@
+rpc-server: rpc.a
+	$(CC) $(CFLAGS) server.a $(LDFLAGS) -o $@
 
 clean:
-	rm -f test rpc-server rpc-client *.a *.o
+	rm -f test rpc-server rpc-client rpc.a *.o *.txt

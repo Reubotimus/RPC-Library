@@ -3,8 +3,11 @@ test.c
 test
 client.c
 server.c
+client.a
+server.a
 rpc-client
 rpc-server
 rpc.a
 test.sh
 cases
+*.txt

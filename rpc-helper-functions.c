@@ -117,7 +117,7 @@ void handle_find(rpc_server *server, int socket_fd, char *message) {
 
 // handle the CALL request from client
 void handle_call(rpc_server *server, int socket_fd, char *message, int message_len) {
-	printf("received request: %s\n", message);
+	//printf("received request: %s\n", message);
 	
 	// gets inputs from message
 	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
@@ -155,7 +155,13 @@ void handle_call(rpc_server *server, int socket_fd, char *message, int message_l
 
 	// gets return data and sends it to client
 	rpc_data *return_data = (funct->handler)(input_data);
-	assert(return_data != NULL);
+	if (return_data == NULL) {
+		sprintf(return_string, "%s", DATA_MSG_STR);
+		send(socket_fd, return_string, DATA_MSG_STR_LEN, 0);
+		return;
+	}
+
+
 	sprintf(return_string, "%s ", DATA_MSG_STR);
 	serialise_data(
 		return_string + DATA_MSG_STR_LEN + 1, 
@@ -191,7 +197,7 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	return_data->data2_len = reverse_byte_order(((int64_t*)serialised_data)[1]);
 
 	if (array_len != 2 * sizeof(int64_t) + return_data->data2_len) {
-		printf("inconsistent data2_len and data2\n");
+		perror("inconsistent data2_len and data2\n");
 		
 		free(return_data);
 		return NULL;
@@ -205,7 +211,7 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 	// otherwise
 	return_data->data2 = malloc(return_data->data2_len);
 	if (return_data->data2 == NULL) {
-		printf("Overlength error\n");
+		perror("Overlength error\n");
 		free(return_data);
 		return NULL;
 	}
@@ -242,7 +248,7 @@ void *serve_client(void *args) {
 				handle_call(srv, socket_fd, buf, len);
 				break;
 			case INVALID_REQUEST:
-				printf("invalid request\n");
+				perror("invalid request\n");
 				break;
 		}
 	}

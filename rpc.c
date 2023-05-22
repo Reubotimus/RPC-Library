@@ -195,18 +195,18 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	message[len] = '\0';
 
 	if (len == 0) {
-		printf("server crashed\n");
+		//printf("server crashed\n");
 		return NULL;
 	}
 	if (len == DATA_MSG_STR_LEN) {
-		printf("error occured returning null\n");
+		p//rintf("error occured returning null\n");
 		return NULL;
 	}
 	rpc_data *d = deserialise_data(
 		message + DATA_MSG_STR_LEN + 1, 
 		len    - (DATA_MSG_STR_LEN + 1));
 	if (d == NULL) {
-		printf("error deserialising data\n");
+		//printf("error deserialising data\n");
 	}
     return d;
 }
