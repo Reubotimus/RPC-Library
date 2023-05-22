@@ -1,0 +1,98 @@
+1. Should the server accept calls from everyone, or just a subset of users? 
+Accepting calls from everyone would be problematic. 
+And leaves the server at significant risk to a denial of service attack. 
+Malicious or incautious users could easily make enough requests and overwhelm the resources of the server. 
+RPC systems should implement checking of clients, 
+however in this RPC framework doing this was outside the scope of the project and doing so would have 
+affected the automated testing as such this functionality was not added.
+
+2. Should authentication etc. be provided by the RPC framework, or by the functions that use the RPC framework? 
+RPC systems usually require authentication. 
+The advantage of supplying this functionality in the RPC framework 
+is that is makes it fast and easy to develop the system, 
+however by not implementing it, the user is able to implement it in the functions supplied by the server. 
+This provides more freedom and flexibility in the implementation and design of the authentication system. 
+Since this is a basic framework designed for use in a variety of contexts, 
+it makes more sense to leave the authentication to the user.
+
+3. What transport layer protocol should be used? What are the trade-offs? 
+TCP should be used since it is more reliable, sends data in order, and is connection oriented. 
+This is important for this RPC system since a client is likely to make multiple requests to the server 
+(find and call at least one function), will have to send many messages, 
+the order of which is important and using TCP is much easier in this context since the data will arrive in order.
+UDP has lower latency than TCP which may be important for some RPC applications, 
+however for the one that we are implementing the low latency of UDP 
+does not out way the benefits of TCP for this general RPC framework.
+
+4. In which function(s) should the socket(s) be created? 
+The function socket() should be used to create the client socket, 
+and the socket in the server which the clients connect to.
+The accept() function should be used to create an additional socket in the server, 
+representing the connection between the server and a client.
+
+5. Should rpc_client and rpc_server be allocated dynamically or statically? What are the implications for the client and server code? 
+There are positives and negatives to both sides. 
+On the one hand, if they are statically allocated, 
+the user of the rpc library will not have to free the memory however, 
+the structs then have to be passed around in their entirety rather than just a pointer. 
+Dynamic allocation allows the struct to be changed by other functions in a multithreaded situation 
+and for a concurrent functions to access the changed server, which would have been impossible to do otherwise. 
+Of course this is not needed in this implementation of an rpc system, and either option would have worked.
+In this framework, the initialisation functions defined in the API specify that they return pointers to the structs. 
+The only way to return a pointer to a new struct in C is to dynamically allocate memory to it. 
+As such this decision if forced.
+
+6. What happens if one host uses big-endian byte order and the other uses little-endian? How does that relate to “network byte order”?
+If two systems use different byte orders, 
+then if they send data as it is stored on their system, 
+the recipient will see it as a different value as intended by the sender. 
+To solve this, there is a standardised network byte order. 
+This allows systems to convert data into a standardised form, 
+ensuring the recipient receives the true value desired by the sender.
+
+
+
+PROTOCOL
+
+The application layer is built on top of TCP IPv6 
+and as such does any lost or duplicated packets from IP will be handled by the TCP protocol. 
+Packet size also does not affect the protocol as TCP is stream oriented. 
+Although UDP would have had lower latency, 
+TCP’s reliability and stream oriented nature make it a better option for this framework.
+
+The RPC framework has two use cases requiring transport layer communication. 
+The find and call requests. Each request and response is sent in a single message. 
+The message type can be CALL, FIND, FUNCTION, and DATA. To indicate the type of a message, 
+the message will begin with a string specifying it. 
+The specifying strings are predefined as “CALL”, “FIND”, “FUNCTION”, and “DATA”. 
+
+Serialising the data
+In order to send rpc_data across the internet, 
+it must be converted into an array of bytes. 
+The easiest way to do this is to know the exact format of the array every time, 
+as such 64 bit integers were used for both data1 and data2_len, 
+since they will not be larger than that on any common architecture. 
+To serialise the data, both data1 and data2_len are converted into 64 bit integers, 
+then converted into network byte order, then put into an array in byte form. 
+The bytes of data2 copied to after these integers.
+To deserialising the data the 64 bit integers are read and converted to host form. 
+Then data2_len number of bytes are read from the remaining array.
+
+Find request
+To request a find the message is sent with the “FIND” header 
+followed by a space and the string of the name of the searched function. 
+The server will respond with the “FUNCTION” header 
+followed by a space and then a 32 bit integer in network byte order, 
+specifying the ID of the function. 
+Valid IDs are greater than or equal to zero, 
+if the server did not find the function it will send -1 as the ID.
+
+Call request
+To request a call the message is sent with the “CALL” header followed by a space, 
+a 64 bit integer specifying the ID of the desired function to be called, 
+then the serialised data. 
+To respond, the server sends a message with the “DATA” header. 
+If there the data is invalid at any stage or NULL, 
+the message will be left with just the header, 
+otherwise the header is followed by a space and then the serialised data.
+

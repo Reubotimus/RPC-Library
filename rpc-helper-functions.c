@@ -200,7 +200,6 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 
 	if (array_len != 2 * sizeof(int64_t) + return_data->data2_len) {
 		perror("inconsistent data2_len and data2\n");
-		
 		free(return_data);
 		return NULL;
 	}

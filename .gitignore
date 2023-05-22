@@ -10,4 +10,4 @@ rpc-server
 rpc.a
 test.sh
 cases
-*.txt
+
