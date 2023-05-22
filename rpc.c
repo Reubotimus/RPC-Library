@@ -148,7 +148,6 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	// send request to server
 	char buf[MAX_MSG_LEN];
 	sprintf(buf, "%s %s", FIND_CMD_STR, name);
-	printf("sending: %s\n", buf);
 	send(cl->socket_fd, buf, strlen(buf), 0);
 
 	// receive response from server
@@ -167,7 +166,7 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	// creates and returns the handle
 	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
 	new_handle->id = function_id;
-	printf("found funct with id: %d\n", new_handle->id);
+	//printf("found funct with id: %d\n", new_handle->id);
     return new_handle;
 }
 
