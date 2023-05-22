@@ -143,9 +143,12 @@ rpc_client *rpc_init_client(char *addr, int port) {
 }
 
 rpc_handle *rpc_find(rpc_client *cl, char *name) {
+	if (!cl || !name) return NULL;
+	
 	// send request to server
 	char buf[MAX_MSG_LEN];
 	sprintf(buf, "%s %s", FIND_CMD_STR, name);
+	printf("sending: %s\n", buf);
 	send(cl->socket_fd, buf, strlen(buf), 0);
 
 	// receive response from server
@@ -156,7 +159,10 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 	int32_t function_id = ntohl(*((int32_t*)(buf + FUNCTION_MSG_STR_LEN + 1)));
 
 	// returns null if server does not have function
-	if (function_id < 0) return NULL;
+	if (function_id < 0) {
+		printf("function not found\n");
+		return NULL;
+	}
 
 	// creates and returns the handle
 	rpc_handle *new_handle = malloc(sizeof(rpc_handle));
