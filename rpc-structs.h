@@ -9,7 +9,6 @@ struct rpc_handle {
 
 /* Server state */
 struct rpc_server {
-    int socket_fd;
     int listening_socket;
 	Linked_List *functions;
 	int number_of_functions;
@@ -19,5 +18,10 @@ struct rpc_server {
 struct rpc_client {
     int socket_fd;
 };
+
+typedef struct {
+	struct rpc_server *server;
+    int file_descriptor;
+} serve_client_args;
 
 #endif

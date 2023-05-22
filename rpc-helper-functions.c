@@ -104,7 +104,7 @@ int search_function_list(Linked_List *list, char *name) {
 }
 
 // handle the FIND request from client
-void handle_find(rpc_server *server, char *message) {
+void handle_find(rpc_server *server, int socket_fd, char *message) {
 	char return_string[MAX_MSG_LEN];
 	
 	sprintf(return_string, "%s ", FUNCTION_MSG_STR);
@@ -112,11 +112,11 @@ void handle_find(rpc_server *server, char *message) {
 			search_function_list(server->functions, message + FIND_CMD_STR_LEN + 1)
 		);
 	
-	send(server->socket_fd, return_string, FUNCTION_MSG_STR_LEN + 1 + sizeof(int32_t), 0);
+	send(socket_fd, return_string, FUNCTION_MSG_STR_LEN + 1 + sizeof(int32_t), 0);
 }
 
 // handle the CALL request from client
-void handle_call(rpc_server *server, char *message, int message_len) {
+void handle_call(rpc_server *server, int socket_fd, char *message, int message_len) {
 	// gets inputs from message
 	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
 	rpc_data *input_data = 
@@ -128,7 +128,7 @@ void handle_call(rpc_server *server, char *message, int message_len) {
 
 	if (input_data == NULL) {
 		sprintf(return_string, "%s", DATA_MSG_STR);
-		send(server->socket_fd, return_string, strlen(return_string), 0);
+		send(socket_fd, return_string, strlen(return_string), 0);
 		return;
 	}
 	//printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
@@ -147,7 +147,7 @@ void handle_call(rpc_server *server, char *message, int message_len) {
 	// if function null sends return error
 	if (funct == NULL) {
 		sprintf(return_string, "%s", DATA_MSG_STR);
-		send(server->socket_fd, return_string, strlen(return_string), 0);
+		send(socket_fd, return_string, strlen(return_string), 0);
 		return;
 	}
 
@@ -160,7 +160,7 @@ void handle_call(rpc_server *server, char *message, int message_len) {
 		MAX_MSG_LEN - DATA_MSG_STR_LEN - 1, 
 		return_data);
 
-	send(server->socket_fd, return_string, DATA_MSG_STR_LEN + 1 + (2 * sizeof(int64_t)) + return_data->data2_len, 0);
+	send(socket_fd, return_string, DATA_MSG_STR_LEN + 1 + (2 * sizeof(int64_t)) + return_data->data2_len, 0);
 }
 
 // serialises the data into the byte stream `serialised_data`
@@ -210,13 +210,18 @@ rpc_data *deserialise_data(void *serialised_data, int array_len) {
 }
 
 // handles all requests from client until client closes
-void serve_client(rpc_server *srv) {
+void *serve_client(void *args) {
+	// parses args
+	rpc_server *srv = ((serve_client_args*)args)->server;
+	int socket_fd = ((serve_client_args*)args)->file_descriptor;
+	free(args);
+
 	int len;
 	char buf[MAX_MSG_LEN];
 
 	// while connected handle all requests
 	while (1) {
-		len = recv(srv->socket_fd, buf, MAX_MSG_LEN, 0);
+		len = recv(socket_fd, buf, MAX_MSG_LEN, 0);
 		buf[len] = '\0';
 
 		// connection terminated
@@ -227,14 +232,15 @@ void serve_client(rpc_server *srv) {
 		// handle request
 		switch(get_request_type(buf)) {
 			case FIND_REQUEST:
-				handle_find(srv, buf);
+				handle_find(srv, socket_fd, buf);
 				break;
 			case CALL_REQUEST:
-				handle_call(srv, buf, len);
+				handle_call(srv, socket_fd, buf, len);
 				break;
 			case INVALID_REQUEST:
 				printf("invalid request\n");
 				break;
 		}
 	}
+	return 0;
 }

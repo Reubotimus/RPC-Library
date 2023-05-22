@@ -1,4 +1,5 @@
 #include "rpc.h"
+#include "rpc-structs.h"
 
 #define MAX_PORT_STR_LEN 6
 
@@ -27,10 +28,10 @@ enum REQUEST_TYPE{FIND_REQUEST, CALL_REQUEST, INVALID_REQUEST};
 enum REQUEST_TYPE get_request_type(char *message);
 
 // handle the FIND request from client
-void handle_find(rpc_server *server, char *message);
+void handle_find(rpc_server *server, int socket_fd, char *message);
 
 // handle the CALL request from client
-void handle_call(rpc_server *server, char *message, int message_len);
+void handle_call(rpc_server *server, int socket_fd, char *message, int message_len);
 
 // serialises the data into the byte stream `send_data`
 void serialise_data(void *send_data, int send_data_length, rpc_data* data);
@@ -39,7 +40,7 @@ void serialise_data(void *send_data, int send_data_length, rpc_data* data);
 rpc_data *deserialise_data(void *serialised_data, int array_len);
 
 // handles all requests from client until client closes
-void serve_client(rpc_server *srv);
+void *serve_client(void *args);
 
 // struct used to encapsulate a function held by the server
 typedef struct {

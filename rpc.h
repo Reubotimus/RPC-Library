@@ -5,20 +5,11 @@
 #define RPC_H
 
 #include <stddef.h>
-#include "linked-list.h"
 
 /* Server state */
-typedef struct {
-    int socket_fd;
-    int listening_socket;
-	Linked_List *functions;
-	int number_of_functions;
-} rpc_server;
-
+typedef struct rpc_server rpc_server;
 /* Client state */
-typedef struct rpc_client {
-    int socket_fd;
-} rpc_client;
+typedef struct rpc_client rpc_client;
 
 /* The payload for requests/responses */
 typedef struct {
@@ -28,9 +19,7 @@ typedef struct {
 } rpc_data;
 
 /* Handle for remote function */
-typedef struct rpc_handle {
-	int id;
-} rpc_handle;
+typedef struct rpc_handle rpc_handle;
 
 /* Handler for remote functions, which takes rpc_data* as input and produces
  * rpc_data* as output */

@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS= -Wall -g
-LDFLAGS = -L. -l:rpc.a
+LDFLAGS = -L. -l:rpc.a -pthread
 
 SRCS= linked-list.c rpc-helper-functions.c rpc.c
 

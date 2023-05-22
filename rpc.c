@@ -1,6 +1,7 @@
 #include "rpc.h"
 #include "rpc-helper-functions.h"
 #include "linked-list.h"
+#include "rpc-structs.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -10,6 +11,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
+#include <pthread.h>
 #define LISTEN_QUEUE_LEN 10
 #define NONBLOCKING
 
@@ -63,21 +65,38 @@ void rpc_serve_all(rpc_server *srv) {
 
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_size = sizeof client_addr;
+	int socket_fd;
+	pthread_t new_thread;
+	serve_client_args *args;
 	while (1) {
 		// Accept a connection - blocks until a connection is ready to be accepted
 		// Get back a new file descriptor to communicate on
-		srv->socket_fd =
-			accept(srv->listening_socket, (struct sockaddr*)&client_addr, &client_addr_size);
-		if (srv->socket_fd < 0) {
+		socket_fd = accept(
+			srv->listening_socket, 
+			(struct sockaddr*)&client_addr, 
+			&client_addr_size
+			);
+		
+		if (socket_fd < 0) {
 			perror("accept");
-			exit(EXIT_FAILURE);
+			break;
 		}
-		if (fork() != 0) {
-			serve_client(srv);
-			close(srv->socket_fd);
-			exit(EXIT_SUCCESS);
+
+		// creates new args for new thread
+		args = malloc(sizeof(serve_client_args));
+		assert(args);
+		args->server = srv;
+		args->file_descriptor = socket_fd;
+
+		// creates new thread
+		if (pthread_create(&new_thread, NULL, &serve_client, args)) {
+			perror("pthread create error\n");
+			free(args);
+			break;
 		}
-		close(srv->socket_fd);
+
+		// detatches thread and continues loop
+		pthread_detach(new_thread);
 	}
 }
 
