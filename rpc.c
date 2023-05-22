@@ -199,7 +199,7 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 		return NULL;
 	}
 	if (len == DATA_MSG_STR_LEN) {
-		p//rintf("error occured returning null\n");
+		//printf("error occured returning null\n");
 		return NULL;
 	}
 	rpc_data *d = deserialise_data(
