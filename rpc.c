@@ -193,6 +193,11 @@ rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	// get and return response
 	int len = recv(cl->socket_fd, message, MAX_MSG_LEN, 0);
 	message[len] = '\0';
+
+	if (len == 0) {
+		printf("server crashed\n");
+		return NULL;
+	}
 	if (len == DATA_MSG_STR_LEN) {
 		printf("error occured returning null\n");
 		return NULL;

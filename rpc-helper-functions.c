@@ -117,6 +117,8 @@ void handle_find(rpc_server *server, int socket_fd, char *message) {
 
 // handle the CALL request from client
 void handle_call(rpc_server *server, int socket_fd, char *message, int message_len) {
+	printf("received request: %s\n", message);
+	
 	// gets inputs from message
 	int64_t function_id = ((int64_t*)(message + CALL_CMD_STR_LEN + 1))[0];
 	rpc_data *input_data = 
@@ -128,7 +130,7 @@ void handle_call(rpc_server *server, int socket_fd, char *message, int message_l
 
 	if (input_data == NULL) {
 		sprintf(return_string, "%s", DATA_MSG_STR);
-		send(socket_fd, return_string, strlen(return_string), 0);
+		send(socket_fd, return_string, DATA_MSG_STR_LEN, 0);
 		return;
 	}
 	//printf("id: %ld d1: %d d2_len: %ld d2: %s\n", function_id, input_data->data1, input_data->data2_len, (char*)input_data->data2);
@@ -147,7 +149,7 @@ void handle_call(rpc_server *server, int socket_fd, char *message, int message_l
 	// if function null sends return error
 	if (funct == NULL) {
 		sprintf(return_string, "%s", DATA_MSG_STR);
-		send(socket_fd, return_string, strlen(return_string), 0);
+		send(socket_fd, return_string, DATA_MSG_STR_LEN, 0);
 		return;
 	}
 
