@@ -173,6 +173,9 @@ rpc_handle *rpc_find(rpc_client *cl, char *name) {
 rpc_data *rpc_call(rpc_client *cl, rpc_handle *h, rpc_data *payload) {
 	if (!cl || !h || !payload) return NULL;
 
+	if ((payload->data2_len == 0 && payload->data2 != NULL) || (payload->data2_len != 0 && payload->data2 == NULL))
+		return NULL;
+
 	char message[MAX_MSG_LEN];
 	sprintf(message, "%s ", CALL_CMD_STR);
 	((int64_t*)(message + (CALL_CMD_STR_LEN + 1)))[0] = (int64_t)h->id;
